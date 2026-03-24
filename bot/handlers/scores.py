@@ -24,14 +24,13 @@ def handle_scores(lab_name: str | None = None) -> str:
         if not pass_rates:
             return f"⚠️ Lab {lab_name} has no submission data yet."
         
-        # Format pass rates - each item is a dict with task info
+        # Format pass rates - API returns list of dicts with task, avg_score, attempts
         lines = [f"📈 Pass rates for {lab_name}:"]
         for task_data in pass_rates:
-            # Extract task name and pass rate from the response
-            # The API returns a list of dicts with task info
-            for task_name, rate in task_data.items():
-                if isinstance(rate, (int, float)):
-                    lines.append(f"- {task_name}: {rate:.1f}%")
+            task_name = task_data.get("task", "Unknown task")
+            avg_score = task_data.get("avg_score", 0)
+            attempts = task_data.get("attempts", 0)
+            lines.append(f"- {task_name}: {avg_score:.1f}% ({int(attempts)} attempts)")
         
         return "\n".join(lines)
         
