@@ -5,6 +5,7 @@ services:
       dockerfile: backend/Dockerfile
       args:
         REGISTRY_PREFIX: ${REGISTRY_PREFIX:-harbor.pg.innopolis.university/docker-hub-cache/}
+        UV_INDEX_URL: ${UV_INDEX_URL:-https://pypi.mirrors.ustc.edu.cn/simple/}
     restart: unless-stopped
     networks:
       - lms-network

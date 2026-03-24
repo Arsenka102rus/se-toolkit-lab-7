@@ -7,6 +7,11 @@
 
 ARG REGISTRY_PREFIX=harbor.pg.innopolis.university/docker-hub-cache/
 FROM ${REGISTRY_PREFIX}astral/uv:python3.14-bookworm-slim AS builder
+
+# PyPI mirror (needed for networks that block pypi.org, e.g., Russia)
+ARG UV_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple/
+ENV UV_INDEX_URL=${UV_INDEX_URL}
+
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
 # Omit development dependencies
@@ -19,17 +24,21 @@ ENV UV_NO_DEV=1
 ENV UV_PYTHON_DOWNLOADS=0
 
 WORKDIR /app
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=backend/pyproject.toml,target=backend/pyproject.toml \
-    uv sync --locked --no-install-project
 
-COPY backend /app/backend
-COPY pyproject.toml uv.lock /app/
+# Copy only pyproject.toml files first (for dependency resolution)
+COPY pyproject.toml uv.lock ./
+COPY backend/pyproject.toml ./backend/
 
+# Sync dependencies (uv will use existing lockfile or create new one)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked
+    uv sync --no-install-project
+
+# Copy the rest of the application
+COPY backend ./backend/
+
+# Sync the project itself
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync
 
 # ---
 # Stage 2: use a final image without uv
