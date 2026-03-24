@@ -15,13 +15,13 @@ COPY bot/pyproject.toml ./
 RUN uv sync --no-dev
 
 # Copy bot source code
-COPY bot/ ./bot/
+COPY bot/ ./
 
 # Copy root .env.bot.example as placeholder
 COPY .env.bot.example .env.bot.secret
 
-# Set Python path to find bot module
+# Set Python path to find modules in current directory
 ENV PYTHONPATH=/app
 
-# Run the bot
-CMD ["uv", "run", "python", "-m", "bot.bot"]
+# Run the bot entry point
+CMD ["uv", "run", "python", "bot.py"]
