@@ -78,7 +78,11 @@ class LLMClient:
         """Make a single LLM API call."""
         import json
         
-        url = f"{self.base_url}/chat/completions" if not self.base_url.endswith("/v1") else f"{self.base_url}/chat/completions"
+        # Build URL: base_url should be like http://localhost:42005/v1
+        if self.base_url.endswith("/v1"):
+            url = f"{self.base_url}/chat/completions"
+        else:
+            url = f"{self.base_url}/v1/chat/completions"
         
         payload = {
             "model": self.model,
