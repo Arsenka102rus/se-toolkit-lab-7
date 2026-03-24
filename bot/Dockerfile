@@ -9,16 +9,15 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 WORKDIR /app
 
 # Copy bot project files
-COPY bot/pyproject.toml bot/uv.lock ./
+COPY bot/pyproject.toml ./
 
-# Install dependencies using uv
-RUN uv sync --frozen --no-dev
+# Install dependencies using uv (generates uv.lock automatically)
+RUN uv sync --no-dev
 
 # Copy bot source code
 COPY bot/ ./bot/
 
-# Copy root .env.bot.secret for environment variables
-# (Will be overridden by docker-compose environment)
+# Copy root .env.bot.example as placeholder
 COPY .env.bot.example .env.bot.secret
 
 # Set Python path to find bot module
