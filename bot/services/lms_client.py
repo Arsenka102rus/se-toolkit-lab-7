@@ -1,0 +1,81 @@
+"""LMS API client for communicating with the backend."""
+
+import httpx
+from config import settings
+
+
+class LMSClient:
+    """Client for the LMS backend API.
+    
+    Uses Bearer token authentication and handles common errors.
+    """
+
+    def __init__(self):
+        self.base_url = settings.lms_api_base_url
+        self.api_key = settings.lms_api_key
+        self.timeout = 10.0  # seconds
+
+    def _get_headers(self) -> dict:
+        """Return headers with Bearer token authentication."""
+        return {"Authorization": f"Bearer {self.api_key}"}
+
+    def get_items(self) -> list[dict] | None:
+        """Fetch all items (labs and tasks) from the backend.
+        
+        Returns:
+            List of items, or None if request fails.
+        """
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(
+                    f"{self.base_url}/items/",
+                    headers=self._get_headers()
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPStatusError as e:
+            raise BackendError(f"HTTP {e.response.status_code}: {e.response.text[:100]}")
+        except httpx.ConnectError as e:
+            raise BackendError(f"connection refused ({self.base_url}). Check that the services are running.")
+        except httpx.TimeoutException:
+            raise BackendError(f"timeout connecting to {self.base_url}")
+        except Exception as e:
+            raise BackendError(f"unexpected error: {str(e)}")
+
+    def get_pass_rates(self, lab: str) -> list[dict] | None:
+        """Fetch per-task pass rates for a specific lab.
+        
+        Args:
+            lab: Lab identifier (e.g., "lab-01")
+            
+        Returns:
+            List of pass rate data, or None if request fails.
+        """
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(
+                    f"{self.base_url}/analytics/pass-rates",
+                    headers=self._get_headers(),
+                    params={"lab": lab}
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:
+                raise BackendError(f"invalid lab identifier: {lab}")
+            raise BackendError(f"HTTP {e.response.status_code}: {e.response.text[:100]}")
+        except httpx.ConnectError as e:
+            raise BackendError(f"connection refused ({self.base_url}). Check that the services are running.")
+        except httpx.TimeoutException:
+            raise BackendError(f"timeout connecting to {self.base_url}")
+        except Exception as e:
+            raise BackendError(f"unexpected error: {str(e)}")
+
+
+class BackendError(Exception):
+    """Error communicating with the LMS backend."""
+    pass
+
+
+# Global client instance
+lms_client = LMSClient()
